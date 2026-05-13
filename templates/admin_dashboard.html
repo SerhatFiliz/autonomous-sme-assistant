@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KOBİ-Agent · Admin Dashboard</title>
+  <meta name="description" content="KOBİ-Agent Yönetici Paneli — ürün, sipariş ve stok özeti." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+
+    body { background: #080b14; color: #e2e8f0; }
+
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.5); }
+      70%  { box-shadow: 0 0 0 10px rgba(99,102,241,0); }
+      100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+    }
+
+    .fade-in { animation: fade-in-up 0.5s ease forwards; }
+    .fade-in-2 { animation: fade-in-up 0.5s 0.1s ease both; }
+    .fade-in-3 { animation: fade-in-up 0.5s 0.2s ease both; }
+    .fade-in-4 { animation: fade-in-up 0.5s 0.3s ease both; }
+
+    .glass {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      backdrop-filter: blur(12px);
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+      background: rgba(255,255,255,0.07);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    .sidebar-link {
+      transition: all 0.2s ease;
+      color: #94a3b8;
+    }
+    .sidebar-link:hover, .sidebar-link.active {
+      background: rgba(99,102,241,0.15);
+      color: #818cf8;
+      border-right: 3px solid #6366f1;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .badge-green  { background: rgba(34,197,94,0.15);  color: #4ade80; }
+    .badge-yellow { background: rgba(234,179,8,0.15);  color: #facc15; }
+    .badge-blue   { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .badge-red    { background: rgba(239,68,68,0.15);  color: #f87171; }
+
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    .avatar-pulse { animation: pulse-ring 2s ease-out infinite; }
+  </style>
+</head>
+
+<body class="min-h-screen flex">
+
+  <!-- ─── Sidebar ─── -->
+  <aside class="glass w-64 min-h-screen flex flex-col shrink-0 fixed top-0 left-0 h-full z-20">
+    <!-- Brand -->
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+           style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .03 2.699-1.398 2.42l-1.33-.265a1 1 0 00-.82.22l-.886.886a2 2 0 01-2.829 0l-.885-.886a1 1 0 00-.82-.22l-1.33.265c-1.428.279-2.397-1.42-1.399-2.42L5 14.5" />
+        </svg>
+      </div>
+      <div>
+        <span class="text-white font-bold text-sm block leading-none">KOBİ-Agent</span>
+        <span class="text-indigo-400 text-xs">Admin Paneli</span>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 py-4 overflow-y-auto scrollbar-thin">
+      <p class="px-6 mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Menü</p>
+      <a href="/admin" id="nav-dashboard"
+         class="sidebar-link active flex items-center gap-3 px-6 py-3 text-sm font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        </svg>
+        Dashboard
+      </a>
+      <a href="/chat-ui" id="nav-chat"
+         class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+        </svg>
+        AI Asistan
+      </a>
+    </nav>
+
+    <!-- User block -->
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3 px-2 py-2 rounded-xl glass">
+        <div class="avatar-pulse w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+             style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
+          {{ user.u[0] | upper }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-white text-xs font-semibold truncate">{{ user.u }}</p>
+          <p class="text-indigo-400 text-xs">{{ user.r | capitalize }}</p>
+        </div>
+        <a href="/logout" title="Çıkış Yap"
+           class="text-slate-400 hover:text-red-400 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Main content ─── -->
+  <main class="ml-64 flex-1 min-h-screen overflow-y-auto">
+
+    <!-- Top bar -->
+    <header class="sticky top-0 z-10 glass border-b border-white/10 px-8 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-bold text-white">Dashboard</h1>
+        <p class="text-xs text-slate-400">Genel Bakış & Metrikler</p>
+      </div>
+      <button onclick="location.reload()"
+              class="flex items-center gap-2 text-xs text-indigo-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg glass">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+        </svg>
+        Yenile
+      </button>
+    </header>
+
+    <div class="p-8 space-y-8">
+
+      <!-- ─── KPI Cards ─── -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Total Products -->
+        <div class="stat-card rounded-2xl p-6 fade-in">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">Toplam Ürün</span>
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                 style="background: rgba(99,102,241,0.15);">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+              </svg>
+            </div>
+          </div>
+          <p class="text-4xl font-bold text-white">{{ metrics.total_products }}</p>
+          <p class="text-xs text-slate-500 mt-1">Veritabanındaki ürün sayısı</p>
+        </div>
+
+        <!-- Total Orders -->
+        <div class="stat-card rounded-2xl p-6 fade-in-2">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">Toplam Sipariş</span>
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                 style="background: rgba(16,185,129,0.15);">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <p class="text-4xl font-bold text-white">{{ metrics.total_orders }}</p>
+          <p class="text-xs text-slate-500 mt-1">Kayıtlı toplam sipariş</p>
+        </div>
+
+        <!-- Low Stock Warning -->
+        <div class="stat-card rounded-2xl p-6 fade-in-3">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">Kritik Stok</span>
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                 style="background: rgba(239,68,68,0.15);">
+              <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+          </div>
+          <p class="text-4xl font-bold text-white">{{ metrics.low_stock | length }}</p>
+          <p class="text-xs text-slate-500 mt-1">Stok seviyesi 10'un altında</p>
+        </div>
+      </section>
+
+      <!-- ─── Low Stock Table ─── -->
+      {% if metrics.low_stock %}
+      <section class="fade-in-3">
+        <h2 class="text-base font-semibold text-white mb-4 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-red-400 inline-block"></span>
+          Kritik Stok Uyarıları
+        </h2>
+        <div class="glass rounded-2xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-white/10">
+                <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Ürün</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Stok</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Durum</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in metrics.low_stock %}
+              <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-white font-medium">{{ item.name }}</td>
+                <td class="px-6 py-4 text-white">{{ item.stock_quantity }}</td>
+                <td class="px-6 py-4">
+                  {% if item.stock_quantity == 0 %}
+                    <span class="badge badge-red">Tükendi</span>
+                  {% else %}
+                    <span class="badge badge-yellow">Kritik</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- ─── Recent Orders Table ─── -->
+      <section class="fade-in-4">
+        <h2 class="text-base font-semibold text-white mb-4 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
+          Son Siparişler
+        </h2>
+        <div class="glass rounded-2xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-white/10">
+                <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">#</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Müşteri</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Ürün</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Tarih</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Durum</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in metrics.recent_orders %}
+              <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-slate-400 font-mono text-xs">#{{ order.id }}</td>
+                <td class="px-6 py-4 text-white font-medium">{{ order.customer }}</td>
+                <td class="px-6 py-4 text-slate-300">{{ order.product }}</td>
+                <td class="px-6 py-4 text-slate-400 text-xs">{{ order.order_date }}</td>
+                <td class="px-6 py-4">
+                  {% if order.status == "Teslim Edildi" %}
+                    <span class="badge badge-green">{{ order.status }}</span>
+                  {% elif order.status == "Kargoya Verildi" %}
+                    <span class="badge badge-blue">{{ order.status }}</span>
+                  {% else %}
+                    <span class="badge badge-yellow">{{ order.status }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+</body>
+</html>

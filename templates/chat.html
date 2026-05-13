@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KOBİ-Agent · AI Asistan</title>
+  <meta name="description" content="KOBİ-Agent Müşteri Sohbet Arayüzü — Gemini destekli AI asistan." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+
+    body { background: #080b14; overflow: hidden; height: 100vh; }
+
+    /* ── Markdown-like message formatting ── */
+    .msg-content p  { margin-bottom: 0.4em; }
+    .msg-content ul { list-style: disc; padding-left: 1.2em; margin-bottom: 0.4em; }
+    .msg-content li { margin-bottom: 0.2em; }
+    .msg-content strong { font-weight: 700; }
+    .msg-content code {
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 0.85em;
+    }
+
+    .glass {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      backdrop-filter: blur(12px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar-link {
+      transition: all 0.2s ease;
+      color: #94a3b8;
+    }
+    .sidebar-link:hover, .sidebar-link.active {
+      background: rgba(99,102,241,0.15);
+      color: #818cf8;
+      border-right: 3px solid #6366f1;
+    }
+
+    /* ── Chat area ── */
+    #chat-messages {
+      scroll-behavior: smooth;
+    }
+
+    /* ── Bubbles ── */
+    .bubble-user {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      border-radius: 18px 18px 4px 18px;
+      max-width: 75%;
+      align-self: flex-end;
+    }
+
+    .bubble-agent {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e2e8f0;
+      border-radius: 18px 18px 18px 4px;
+      max-width: 80%;
+      align-self: flex-start;
+    }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.8) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .bubble-animate { animation: pop-in 0.25s ease forwards; }
+
+    /* ── Typing indicator ── */
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40%            { transform: scale(1); }
+    }
+
+    .typing-dot {
+      width: 7px; height: 7px;
+      background: #818cf8;
+      border-radius: 50%;
+      display: inline-block;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ── Input ── */
+    #user-input {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      transition: all 0.3s ease;
+      resize: none;
+      max-height: 140px;
+    }
+    #user-input:focus {
+      outline: none;
+      border-color: #818cf8;
+      background: rgba(129,140,248,0.10);
+      box-shadow: 0 0 0 3px rgba(129,140,248,0.18);
+    }
+    #user-input::placeholder { color: rgba(255,255,255,0.3); }
+
+    .send-btn {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      transition: all 0.25s ease;
+    }
+    .send-btn:hover:not(:disabled) {
+      transform: scale(1.06);
+      box-shadow: 0 6px 20px rgba(99,102,241,0.5);
+    }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .avatar-pulse { animation: pulse-ring 2s ease-out infinite; }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.5); }
+      70%  { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
+      100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+    }
+
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    /* ── Suggestion chips ── */
+    .chip {
+      background: rgba(99,102,241,0.12);
+      border: 1px solid rgba(99,102,241,0.3);
+      color: #a5b4fc;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .chip:hover {
+      background: rgba(99,102,241,0.25);
+      border-color: rgba(99,102,241,0.6);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+
+<body class="flex h-screen overflow-hidden">
+
+  <!-- ─── Sidebar ─── -->
+  <aside class="glass w-64 h-full flex flex-col shrink-0 z-20">
+    <!-- Brand -->
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+           style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .03 2.699-1.398 2.42l-1.33-.265a1 1 0 00-.82.22l-.886.886a2 2 0 01-2.829 0l-.885-.886a1 1 0 00-.82-.22l-1.33.265c-1.428.279-2.397-1.42-1.399-2.42L5 14.5" />
+        </svg>
+      </div>
+      <div>
+        <span class="text-white font-bold text-sm block leading-none">KOBİ-Agent</span>
+        <span class="text-indigo-400 text-xs">AI Asistan</span>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 py-4 overflow-y-auto scrollbar-thin">
+      <p class="px-6 mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Menü</p>
+      {% if user.r == 'admin' %}
+      <a href="/admin" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        </svg>
+        Dashboard
+      </a>
+      {% endif %}
+      <a href="/chat-ui" class="sidebar-link active flex items-center gap-3 px-6 py-3 text-sm font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+        </svg>
+        AI Asistan
+      </a>
+    </nav>
+
+    <!-- Suggestions / quick prompts -->
+    <div class="px-4 py-3 border-t border-white/10">
+      <p class="text-xs text-slate-500 mb-2 font-semibold uppercase tracking-widest">Hızlı Sorular</p>
+      <div class="space-y-2">
+        <button onclick="fillChip('1 numaralı siparişimin durumu nedir?')"
+                class="chip w-full text-left px-3 py-2 rounded-xl text-xs">
+          📦 Sipariş #1 durumu
+        </button>
+        <button onclick="fillChip('Stokta kritik seviyede olan ürünler hangileri?')"
+                class="chip w-full text-left px-3 py-2 rounded-xl text-xs">
+          ⚠️ Kritik stok uyarısı
+        </button>
+        <button onclick="fillChip('Kahve ürünü hakkında bilgi ver.')"
+                class="chip w-full text-left px-3 py-2 rounded-xl text-xs">
+          🔍 Kahve ürün bilgisi
+        </button>
+      </div>
+    </div>
+
+    <!-- User block -->
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3 px-2 py-2 rounded-xl glass">
+        <div class="avatar-pulse w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+             style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
+          {{ user.u[0] | upper }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-white text-xs font-semibold truncate">{{ user.u }}</p>
+          <p class="text-indigo-400 text-xs">{{ user.r | capitalize }}</p>
+        </div>
+        <a href="/logout" title="Çıkış Yap"
+           class="text-slate-400 hover:text-red-400 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Chat Main ─── -->
+  <main class="flex-1 flex flex-col h-full overflow-hidden">
+
+    <!-- Header -->
+    <header class="glass border-b border-white/10 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div class="relative">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center"
+             style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+        </div>
+        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#080b14]"></span>
+      </div>
+      <div>
+        <h1 class="text-sm font-bold text-white">KOBİ Asistanı</h1>
+        <p class="text-xs text-emerald-400">● Çevrimiçi · Gemini AI</p>
+      </div>
+    </header>
+
+    <!-- Messages -->
+    <div id="chat-messages"
+         class="flex-1 overflow-y-auto scrollbar-thin px-6 py-6 flex flex-col gap-4">
+
+      <!-- Welcome message -->
+      <div class="flex items-end gap-3">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+             style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+        </div>
+        <div class="bubble-agent bubble-animate px-4 py-3 text-sm msg-content">
+          <p>Merhaba <strong>{{ user.u }}</strong>! 👋 Ben KOBİ-Agent, yapay zeka destekli işletme asistanınızım.</p>
+          <p class="mt-1 text-slate-400 text-xs">Sipariş sorgulama, stok kontrolü ve ürün bilgisi için buradayım. Nasıl yardımcı olabilirim?</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Typing indicator (hidden by default) -->
+    <div id="typing-indicator" class="hidden px-6 pb-2">
+      <div class="flex items-end gap-3">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+             style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+        </div>
+        <div class="bubble-agent px-4 py-3 flex items-center gap-1.5">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input bar -->
+    <div class="glass border-t border-white/10 px-4 py-3 shrink-0">
+      <div class="flex items-end gap-3">
+        <textarea id="user-input"
+                  rows="1"
+                  placeholder="Bir soru sorun… (Enter ile gönder, Shift+Enter için yeni satır)"
+                  class="flex-1 rounded-2xl px-4 py-3 text-sm leading-6"></textarea>
+        <button id="send-btn" onclick="sendMessage()"
+                class="send-btn w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+          </svg>
+        </button>
+      </div>
+      <p class="text-xs text-slate-600 mt-1.5 text-center">
+        KOBİ-Agent · Gemini AI tarafından desteklenmektedir
+      </p>
+    </div>
+  </main>
+
+  <script>
+    const chatMessages   = document.getElementById('chat-messages');
+    const inputEl        = document.getElementById('user-input');
+    const sendBtn        = document.getElementById('send-btn');
+    const typingEl       = document.getElementById('typing-indicator');
+
+    // Auto-resize textarea
+    inputEl.addEventListener('input', () => {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+    });
+
+    // Enter to send (Shift+Enter for newline)
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    function scrollToBottom() {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function getTimestamp() {
+      return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function appendUserBubble(text) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex items-end gap-3 justify-end';
+      wrapper.innerHTML = `
+        <div class="bubble-user bubble-animate px-4 py-3 text-sm">
+          <p>${escapeHtml(text)}</p>
+          <p class="text-xs text-indigo-200/60 text-right mt-1">${getTimestamp()}</p>
+        </div>
+      `;
+      chatMessages.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function appendAgentBubble(text) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex items-end gap-3';
+      wrapper.innerHTML = `
+        <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+             style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+        </div>
+        <div class="bubble-agent bubble-animate px-4 py-3 text-sm msg-content">
+          ${formatText(text)}
+          <p class="text-xs text-slate-500 mt-1">${getTimestamp()}</p>
+        </div>
+      `;
+      chatMessages.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function appendErrorBubble(text) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex items-end gap-3';
+      wrapper.innerHTML = `
+        <div class="bubble-animate px-4 py-3 text-sm rounded-2xl border border-red-500/30"
+             style="background: rgba(239,68,68,0.1); color: #f87171; max-width: 80%;">
+          <p>⚠️ ${escapeHtml(text)}</p>
+        </div>
+      `;
+      chatMessages.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function showTyping()  { typingEl.classList.remove('hidden'); scrollToBottom(); }
+    function hideTyping()  { typingEl.classList.add('hidden'); }
+
+    function setBusy(busy) {
+      sendBtn.disabled = busy;
+      inputEl.disabled = busy;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Very lightweight markdown-like formatting
+    function formatText(text) {
+      const escaped = escapeHtml(text);
+      return escaped
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br/>');
+    }
+
+    function fillChip(text) {
+      inputEl.value = text;
+      inputEl.focus();
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+    }
+
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      appendUserBubble(text);
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+      setBusy(true);
+      showTyping();
+
+      try {
+        const resp = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        });
+
+        hideTyping();
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          appendErrorBubble(err.detail || `Sunucu hatası (${resp.status})`);
+        } else {
+          const data = await resp.json();
+          appendAgentBubble(data.answer || 'Yanıt alınamadı.');
+        }
+      } catch (e) {
+        hideTyping();
+        appendErrorBubble('Bağlantı hatası. Lütfen tekrar deneyin.');
+      } finally {
+        setBusy(false);
+        inputEl.focus();
+      }
+    }
+  </script>
+
+</body>
+</html>

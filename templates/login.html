@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KOBİ-Agent · Giriş Yap</title>
+  <meta name="description" content="KOBİ-Agent yapay zeka destekli işletme asistanı — güvenli giriş sayfası." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+
+    @keyframes gradient-shift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-12px); }
+    }
+
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    body {
+      background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #0f3460);
+      background-size: 400% 400%;
+      animation: gradient-shift 12s ease infinite;
+      min-height: 100vh;
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .card {
+      animation: fade-in-up 0.6s ease forwards;
+    }
+
+    .icon-float {
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .input-field {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      transition: all 0.3s ease;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #818cf8;
+      background: rgba(129, 140, 248, 0.12);
+      box-shadow: 0 0 0 3px rgba(129,140,248,0.2);
+    }
+
+    .input-field::placeholder { color: rgba(255,255,255,0.35); }
+
+    .btn-login {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-login::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #818cf8, #a78bfa);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .btn-login:hover::after { opacity: 1; }
+    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(99,102,241,0.5); }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login span { position: relative; z-index: 1; }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+  <!-- Decorative orbs -->
+  <div class="orb w-96 h-96 bg-indigo-500 top-[-5rem] left-[-5rem]"></div>
+  <div class="orb w-80 h-80 bg-purple-600 bottom-[-4rem] right-[-4rem]"></div>
+
+  <div class="card glass rounded-3xl p-10 w-full max-w-md shadow-2xl">
+
+    <!-- Logo / Brand -->
+    <div class="flex flex-col items-center mb-8">
+      <div class="icon-float w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+           style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" stroke-width="2"
+             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .03 2.699-1.398 2.42l-1.33-.265a1 1 0 00-.82.22l-.886.886a2 2 0 01-2.829 0l-.885-.886a1 1 0 00-.82-.22l-1.33.265c-1.428.279-2.397-1.42-1.399-2.42L5 14.5" />
+        </svg>
+      </div>
+      <h1 class="text-3xl font-bold text-white tracking-tight">KOBİ-Agent</h1>
+      <p class="text-sm text-indigo-300 mt-1">Yapay Zeka Destekli İşletme Asistanı</p>
+    </div>
+
+    <!-- Error alert -->
+    {% if error %}
+    <div class="flex items-center gap-3 mb-6 px-4 py-3 rounded-xl"
+         style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35);">
+      <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+      </svg>
+      <span class="text-red-300 text-sm">{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Login form -->
+    <form method="post" action="/login" class="space-y-5">
+
+      <div>
+        <label for="username" class="block text-xs font-semibold text-indigo-300 uppercase tracking-widest mb-2">
+          Kullanıcı Adı
+        </label>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+          </span>
+          <input id="username" name="username" type="text" required autocomplete="username"
+                 placeholder="admin veya customer"
+                 class="input-field w-full rounded-xl py-3 pl-10 pr-4 text-sm" />
+        </div>
+      </div>
+
+      <div>
+        <label for="password" class="block text-xs font-semibold text-indigo-300 uppercase tracking-widest mb-2">
+          Şifre
+        </label>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+          </span>
+          <input id="password" name="password" type="password" required autocomplete="current-password"
+                 placeholder="••••••••"
+                 class="input-field w-full rounded-xl py-3 pl-10 pr-4 text-sm" />
+        </div>
+      </div>
+
+      <button id="login-btn" type="submit"
+              class="btn-login w-full py-3.5 rounded-xl font-semibold text-white text-sm tracking-wide mt-2">
+        <span>Giriş Yap →</span>
+      </button>
+    </form>
+
+    <!-- Hint -->
+    <p class="text-center text-xs text-indigo-400/60 mt-6">
+      Admin: <span class="text-indigo-300">admin / admin</span> &nbsp;·&nbsp;
+      Müşteri: <span class="text-indigo-300">customer / customer</span>
+    </p>
+  </div>
+
+</body>
+</html>

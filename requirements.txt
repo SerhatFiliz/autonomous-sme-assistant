@@ -1,0 +1,37 @@
+# saas_ecommerce_ai_agent/requirements.txt
+
+# Core web framework and ASGI server
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# Data validation (Pydantic V2)
+pydantic>=2.7.0
+
+# Google Gemini SDKs (new preferred SDK + legacy fallback)
+google-genai
+google-generativeai
+
+# Database ORM (used by existing app layer)
+sqlalchemy
+
+# Async file serving (required by FastAPI StaticFiles)
+aiofiles
+
+# Environment variable loading
+python-dotenv
+
+# Template engine
+jinja2
+
+# Session / cookie signing
+itsdangerous
+
+# Password hashing
+bcrypt
+
+# Multipart form parsing
+python-multipart
+
+# HTTP client (used by Django tasks to call this service; kept here for symmetry)
+requests
+httpx
